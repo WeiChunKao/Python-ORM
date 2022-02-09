@@ -1,41 +1,28 @@
-from sqlalchemy import create_engine
-from sqlalchemy import Table, MetaData, Column, Integer, String, ForeignKey
-from sqlalchemy.orm import mapper,sessionmaker
-conn = 'mssql+pymssql://dbUserName:dbUserPassword@dbIp:dbPort/Database'
-engine = create_engine(
-    f'{conn}', echo=False)
-metadata = MetaData()
+from orm import ORM
+from sqlalchemy import Table, Column, String, Integer
+from typing import List, Any
 
-user = Table('table_user', metadata,
-            Column('id', Integer, primary_key=True),
-            Column('name', String(50))
-        )
 
 class User(object):
-    def __init__(self, name, fullname, password):
+    def __init__(self, id, name, test):
+        self.id = id
         self.name = name
-        self.fullname = fullname
-        self.password = password
+        self.test = test
 
-mapper(User, user)
 
-Session = sessionmaker(bind=engine)
-'''or
-Session = sessionmaker()
-Session.configure(bind=engine)
-'''
-# select
-session = Session()
-for instance in session.query(User).order_by(User.id):
-    print(instance.id, instance.name)
-# insert one
-ed_user = User(name='ed', fullname='Ed Jones', password='edspassword')
-session.add(ed_user)
-session.commit()
-# insert many
-session.add_all([
-    User(name='wendy', fullname='Wendy Williams', password='foobar'),
-    User(name='mary', fullname='Mary Contrary', password='xxg527'),
-    User(name='fred', fullname='Fred Flinstone', password='blah')])
-# rollback
-session.rollback()
+if __name__ == '__main__':
+    orm = ORM()
+    user = Table('user', orm.getMetaData(),
+                 Column('id', String(50), primary_key=True),
+                 Column('name', String(50)),
+                 Column('test', Integer())
+                 )
+    orm.setMapper(User, user)
+    #orm.insert([User(name='Jack', id='3',test=789), User(name='Jack',id='4',test=456)])
+    #orm.deleteAll(User,"name= :name", name = 'Jack')
+    #orm.deleteOne(User, "name= :name and id != :id ", name='Jack',id='4')
+    #orm.updateOne(User, "name= :name", {'test': 123}, name='wendy')
+    #orm.updateAll(User, "name= :name", {'test': 7777}, name='Jack')
+    for instance in orm.getSessions().query(User).order_by(User.id):
+        print(instance.id, instance.name, instance.test)
+    orm.close()
